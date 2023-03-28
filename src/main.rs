@@ -17,8 +17,11 @@ use tui::{
     Frame, Terminal,
 };
 
+mod cell;
+
 struct App {
     tick_rate: Duration,
+    cell_size: cell::CellSize,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -32,6 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // create app and run it
     let app = App {
         tick_rate: Duration::from_millis(250),
+        cell_size: cell::CellSize::Small,
     };
     let res = run_app(&mut terminal, &app);
 
@@ -57,7 +61,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &App) -> io::Result<()> 
     // used for testing
     let mut i = 0;
     loop {
-        terminal.draw(|f| ui(f, i))?;
+        terminal.draw(|f| ui(f, i, app))?;
 
         if crossterm::event::poll(app.tick_rate)? {
             if let Event::Key(key) = event::read()? {
@@ -74,7 +78,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &App) -> io::Result<()> 
     }
 }
 
-fn ui<B: Backend>(frame: &mut Frame<B>, i: i32) {
+fn ui<B: Backend>(frame: &mut Frame<B>, i: i32, app: &App) {
     let terminal = frame.size();
 
     let game_block = Block::default()
@@ -97,15 +101,15 @@ fn ui<B: Backend>(frame: &mut Frame<B>, i: i32) {
     let screen = screen_layout[0];
 
     let cell_height = 1;
-    let cell_width = 2;
+    // let cell_width = 2;
 
     // figure out how many cells can fit on the screen
-    let num_cells_y = screen.height / cell_height;
-    let num_cells_x = screen.width / cell_width;
+    let num_cells_y = screen.height / app.cell_size.height();
+    let num_cells_x = screen.width / app.cell_size.width();
 
     // height and width of the game
-    let game_height = num_cells_y * cell_height;
-    let game_width = num_cells_x * cell_width;
+    let game_height = num_cells_y * app.cell_size.height();
+    let game_width = num_cells_x * app.cell_size.width();
 
     let game_summary = Paragraph::new(format!(
         "Game Summary
@@ -152,13 +156,19 @@ fn ui<B: Backend>(frame: &mut Frame<B>, i: i32) {
 
     let rows = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Length(cell_height); num_cells_y.into()])
+        .constraints(vec![
+            Constraint::Length(app.cell_size.height());
+            num_cells_y.into()
+        ])
         .split(game);
 
     for (x, row) in rows.into_iter().enumerate() {
         let columns = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Length(cell_width); num_cells_x.into()])
+            .constraints(vec![
+                Constraint::Length(app.cell_size.width());
+                num_cells_x.into()
+            ])
             .split(*row);
         for (y, column) in columns.into_iter().enumerate() {
             let cell = match (x + y + i as usize) % 2 {
