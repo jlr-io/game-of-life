@@ -1,17 +1,36 @@
+mod game;
+use clap::Parser;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use game::{Game};
 use std::{
     error::Error,
     io::{self, Stdout},
 };
-use tui::{backend::CrosstermBackend, Terminal};
+use ratatui::{backend::CrosstermBackend, Terminal};
 
-mod app;
-mod cell;
-mod ui;
+fn main() -> Result<(), Box<dyn Error>> {
+    let args = game::Args::parse();
+    
+    let mut terminal = setup_terminal()?;
+
+    // // create app and run it
+    let mut game = Game::new(args.cell_size);
+    let res = game.run(&mut terminal);
+
+    // // restore terminal
+    restore_terminal(terminal)?;
+
+    if let Err(err) = res {
+        println!("{:?}", err);
+        return Err(Box::new(err));
+    }
+
+    Ok(())
+}
 
 type CrosstermTerminal = Terminal<CrosstermBackend<Stdout>>;
 
@@ -32,23 +51,5 @@ fn restore_terminal(mut terminal: CrosstermTerminal) -> io::Result<()> {
         DisableMouseCapture
     )?;
     terminal.show_cursor()?;
-    Ok(())
-}
-
-fn main() -> Result<(), Box<dyn Error>> {
-    let mut terminal = setup_terminal()?;
-
-    // create app and run it
-    let mut app = app::App::default();
-    let res = app.run(&mut terminal);
-
-    // restore terminal
-    restore_terminal(terminal)?;
-
-    if let Err(err) = res {
-        println!("{:?}", err);
-        return Err(Box::new(err));
-    }
-
     Ok(())
 }

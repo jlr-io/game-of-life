@@ -1,68 +1,29 @@
-use crate::ui;
+mod ui;
+use clap::Parser;
 use crossterm::event::{self, Event, KeyCode};
 use std::{
     io,
     time::{Duration, Instant},
 };
-use tui::{backend::Backend, layout::Rect, Terminal};
+use ratatui::{backend::Backend, layout::Rect, Terminal};
 
-#[derive(Debug, Clone, Copy)]
-pub enum CellState {
-    Alive,
-    Dead,
+pub mod cell;
+use cell::{Cell, CellSize, CellState};
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+pub struct Args {
+    #[arg(short, long, default_value_t = cell::CellSize::Large)]
+    pub cell_size: cell::CellSize
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum CellSize {
-    Small,
-    Medium,
-    Large,
-}
-
-impl CellSize {
-    pub fn width(&self) -> u16 {
-        match self {
-            CellSize::Small => 2,
-            CellSize::Medium => 3,
-            CellSize::Large => 5,
-        }
-    }
-
-    pub fn height(&self) -> u16 {
-        match self {
-            CellSize::Small => 1,
-            CellSize::Medium => 2,
-            CellSize::Large => 3,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Cell {
-    pub location: (usize, usize),
-    pub state: CellState,
-}
-
-impl Cell {
-    pub fn new(location: (usize, usize), state: CellState) -> Self {
-        Self { location, state }
-    }
-
-    pub fn is_alive(&self) -> bool {
-        match self.state {
-            CellState::Alive => true,
-            CellState::Dead => false,
-        }
-    }
-}
-
-pub struct App {
+pub struct Game {
     pub tick_rate: Duration,
     pub cell_size: CellSize,
     pub cells: Vec<Vec<Cell>>,
 }
 
-impl Default for App {
+impl Default for Game {
     fn default() -> Self {
         Self {
             tick_rate: Duration::from_millis(250),
@@ -72,7 +33,14 @@ impl Default for App {
     }
 }
 
-impl App {
+impl Game {
+    pub fn new(cell_size: CellSize) -> Game {
+        Game {
+            tick_rate: Duration::from_millis(250),
+            cell_size,
+            cells: vec![]
+        }
+    }
     pub fn get_cell_rows(&self) -> usize {
         self.cells.len()
     }

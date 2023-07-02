@@ -1,4 +1,4 @@
-use tui::{
+use ratatui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -7,9 +7,9 @@ use tui::{
     Frame,
 };
 
-use crate::app;
+use crate::game;
 
-pub fn setup_game<B: Backend>(frame: &mut Frame<B>, app: &app::App) -> Rect {
+pub fn setup_game<B: Backend>(frame: &mut Frame<B>, game: &game::Game) -> Rect {
     let terminal = frame.size();
 
     let game_block = Block::default()
@@ -32,12 +32,12 @@ pub fn setup_game<B: Backend>(frame: &mut Frame<B>, app: &app::App) -> Rect {
     let screen = screen_layout[0];
 
     // figure out how many cells can fit on the screen
-    let cell_rows = screen.height / app.cell_size.height();
-    let cell_columns = screen.width / app.cell_size.width();
+    let cell_rows = screen.height / game.cell_size.height();
+    let cell_columns = screen.width / game.cell_size.width();
 
     // height and width of the game
-    let game_height = cell_rows * app.cell_size.height();
-    let game_width = cell_columns * app.cell_size.width();
+    let game_height = cell_rows * game.cell_size.height();
+    let game_width = cell_columns * game.cell_size.width();
 
     // let game_summary = screen_layout[1];
 
@@ -82,20 +82,20 @@ pub fn draw_game_summary<B: Backend>(frame: &mut Frame<B>, game_summary: Rect, s
     frame.render_widget(summary_paragraph, game_summary);
 }
 
-pub fn draw_cells<B: Backend>(app: &app::App, frame: &mut Frame<B>) {
-    for y in 0..app.get_cell_rows() as u16 {
-        for x in 0..app.get_cell_columns() as u16 {
-            let cell = match app.cells[y as usize][x as usize].is_alive() {
+pub fn draw_cells<B: Backend>(game: &game::Game, frame: &mut Frame<B>) {
+    for y in 0..game.get_cell_rows() as u16 {
+        for x in 0..game.get_cell_columns() as u16 {
+            let cell = match game.cells[y as usize][x as usize].is_alive() {
                 true => Block::default().style(Style::default().bg(Color::Green).fg(Color::White)),
                 false => Block::default().style(Style::default().bg(Color::Black).fg(Color::Black)),
             };
             frame.render_widget(
                 cell,
                 Rect::new(
-                    x as u16 * app.cell_size.width() + 2, // +2 is to offset the border
-                    y as u16 * app.cell_size.height() + 2,
-                    app.cell_size.width(),
-                    app.cell_size.height(),
+                    x as u16 * game.cell_size.width() + 2, // +2 is to offset the border
+                    y as u16 * game.cell_size.height() + 2,
+                    game.cell_size.width(),
+                    game.cell_size.height(),
                 ),
             )
         }
